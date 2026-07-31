@@ -6,8 +6,8 @@ import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 
+import { ApiClients } from './collections/ApiClients'
 import { Categories } from './collections/Categories'
-import { Comments } from './collections/Comments'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
@@ -15,8 +15,9 @@ import { Users } from './collections/Users'
 import { Footer } from './Footer/config'
 import { Header } from './Header/config'
 import { plugins } from './plugins'
+import { articleBySlugEndpoint, articlesListEndpoint } from './endpoints/articles'
 import { defaultLexical } from '@/fields/defaultLexical'
-import { getServerSideURL } from './utilities/getURL'
+import { getServerSideURL, getPublicSiteURL } from './utilities/getURL'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -27,9 +28,6 @@ export default buildConfig({
       // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
       // Feel free to delete this at any time. Simply remove the line below and the import `BeforeLogin` statement on line 15.
       beforeLogin: ['@/components/BeforeLogin'],
-      // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
-      // Feel free to delete this at any time. Simply remove the line below and the import `BeforeDashboard` statement on line 15.
-      beforeDashboard: ['@/components/BeforeDashboard'],
     },
     importMap: {
       baseDir: path.resolve(dirname),
@@ -65,8 +63,10 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URI || '',
     },
   }),
-  collections: [Pages, Posts, Media, Categories, Users, Comments],
-  cors: [getServerSideURL()].filter(Boolean),
+  collections: [Pages, Posts, Media, Categories, Users, ApiClients],
+  // Both the app's own host and the public site: the blog is served through
+  // heelvrijeten.nl while this runs on cms.heelvrijeten.nl.
+  cors: [...new Set([getServerSideURL(), getPublicSiteURL()])].filter(Boolean),
   globals: [Header, Footer],
   plugins: [
     ...plugins,
@@ -79,7 +79,9 @@ export default buildConfig({
       handler: async (req) => {
         return new Response('OK', { status: 200 });
       }
-    }
+    },
+    articlesListEndpoint,
+    articleBySlugEndpoint,
   ],
   secret: process.env.PAYLOAD_SECRET,
   sharp,

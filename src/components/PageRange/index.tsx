@@ -1,14 +1,14 @@
 import React from 'react'
 
 const defaultLabels = {
-  plural: 'Docs',
-  singular: 'Doc',
+  plural: 'Documenten',
+  singular: 'Document',
 }
 
 const defaultCollectionLabels = {
   posts: {
-    plural: 'Posts',
-    singular: 'Post',
+    plural: 'Artikelen',
+    singular: 'Artikel',
   },
 }
 
@@ -43,10 +43,10 @@ export const PageRange: React.FC<{
 
   return (
     <div className={[className, 'font-semibold'].filter(Boolean).join(' ')}>
-      {(typeof totalDocs === 'undefined' || totalDocs === 0) && 'Search produced no results.'}
+      {(typeof totalDocs === 'undefined' || totalDocs === 0) && 'Geen artikelen gevonden.'}
       {typeof totalDocs !== 'undefined' &&
         totalDocs > 0 &&
-        `Showing ${indexStart}${indexStart > 0 ? ` - ${indexEnd}` : ''} of ${totalDocs} ${
+        `Toont ${indexStart}${indexStart > 0 ? ` - ${indexEnd}` : ''} van ${totalDocs} ${
           totalDocs > 1 ? plural : singular
         }`}
     </div>

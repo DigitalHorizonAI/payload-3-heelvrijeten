@@ -31,7 +31,7 @@ This file defines the working rules for automated agents in this repository.
 ## Testing Rules
 
 - Run relevant tests after changes.
-- For changes that affect app behavior, dependency upgrades, build tooling, auth, admin flows, seeding, comments, routing, or rendering, run the Playwright end-to-end suite.
+- For changes that affect app behavior, dependency upgrades, build tooling, auth, admin flows, routing, or rendering, run the Playwright end-to-end suite.
 - Use `corepack pnpm test:e2e` as the default verification command for those changes.
 - If the task affects the visible browser flow and manual inspection is useful, use `corepack pnpm test:e2e:headed` or `corepack pnpm test:e2e:manual`.
 - Do not claim success without stating what was actually run.
@@ -40,9 +40,8 @@ This file defines the working rules for automated agents in this repository.
 
 - Keep the Docker-based PostgreSQL flow working for e2e tests.
 - Do not break the admin onboarding flow.
-- Preserve the seeded-content workflow and the comment approval flow unless the task explicitly changes them.
-- Seed behavior for e2e must stay deterministic.
-- Production seeding must not be silently changed to test-only behavior.
+- There is no seed feature and no comments collection: both were template code and were deleted. Do not reintroduce either.
+- `scripts/seed-local.ts` is a local-only dev helper and is unrelated; it refuses to run against a non-local database.
 
 ## Audit And Security Rules
 

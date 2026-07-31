@@ -1,4 +1,5 @@
 import type { Metadata } from 'next/types'
+import { SITE } from '@/utilities/site'
 
 import { CollectionArchive } from '@/components/CollectionArchive'
 import configPromise from '@payload-config'
@@ -61,19 +62,20 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
   })
 
   return (
-    <div className="pt-24 pb-24">
+    <div className="pt-10 md:pt-14 pb-24">
       <PageClient />
-      <div className="container mb-16">
-        <div className="prose dark:prose-invert max-w-none">
-          <h1 className="sr-only">Search</h1>
-          <Search />
-        </div>
+      <div className="container mb-12">
+        <p className="text-xs tracking-[0.2em] uppercase text-muted-foreground mb-3">
+          Kennisbank
+        </p>
+        <h1 className="editorial-heading text-3xl sm:text-4xl text-foreground mb-6">Zoeken</h1>
+        <Search />
       </div>
 
       {posts.totalDocs > 0 ? (
         <CollectionArchive posts={posts.docs as CardPostData[]} />
       ) : (
-        <div className="container">No results found.</div>
+        <div className="container">Geen resultaten gevonden.</div>
       )}
     </div>
   )
@@ -81,6 +83,6 @@ export default async function Page({ searchParams: searchParamsPromise }: Args) 
 
 export function generateMetadata(): Metadata {
   return {
-    title: `Payload Website Template Search`,
+    title: `${SITE.name} Search`,
   }
 }

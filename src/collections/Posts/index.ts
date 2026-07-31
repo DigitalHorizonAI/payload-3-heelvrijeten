@@ -9,14 +9,14 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
-import { authenticated } from '../../access/authenticated'
-import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { contentReader } from '../../access/contentReader'
+import { contentWriter } from '../../access/contentWriter'
 import { Banner } from '../../blocks/Banner/config'
 import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
 import { populateAuthors } from './hooks/populateAuthors'
-import { revalidatePost } from './hooks/revalidatePost'
+import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
 
 import {
   MetaDescriptionField,
@@ -31,10 +31,14 @@ import { getServerSideURL } from '@/utilities/getURL'
 export const Posts: CollectionConfig<'posts'> = {
   slug: 'posts',
   access: {
-    create: authenticated,
-    delete: authenticated,
-    read: authenticatedOrPublished,
-    update: authenticated,
+    // contentWriter/contentReader, not authenticated: this is the collection an
+    // API key manages. The tool is a replacement for editing in the admin
+    // panel, so it needs the full lifecycle — including removing an article and
+    // seeing its own drafts, neither of which a publish-only key could do.
+    create: contentWriter,
+    delete: contentWriter,
+    read: contentReader,
+    update: contentWriter,
   },
   // This config controls what's populated by default when a post is referenced
   // https://payloadcms.com/docs/queries/select#defaultpopulate-collection-config-property
@@ -218,6 +222,7 @@ export const Posts: CollectionConfig<'posts'> = {
   ],
   hooks: {
     afterChange: [revalidatePost],
+    afterDelete: [revalidateDelete],
     afterRead: [populateAuthors],
   },
   versions: {

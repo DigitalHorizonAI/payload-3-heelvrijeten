@@ -31,7 +31,6 @@ export default defineConfig({
       PORT: String(port),
       DATABASE_URI: databaseURL,
       DISABLE_SEARCH_SYNC: 'true',
-      USE_LOCAL_SEED_MEDIA: 'true',
       PAYLOAD_SECRET: payloadSecret,
       NEXT_PUBLIC_SERVER_URL: baseURL,
     },
