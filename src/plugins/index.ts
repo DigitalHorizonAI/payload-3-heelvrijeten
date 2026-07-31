@@ -11,16 +11,20 @@ import { searchFields } from '@/search/fieldOverrides'
 import { beforeSyncWithSearch } from '@/search/beforeSync'
 
 import { Page, Post } from '@/payload-types'
-import { getServerSideURL } from '@/utilities/getURL'
+import { getPublicSiteURL } from '@/utilities/getURL'
+import { getDocPath } from '@/utilities/collectionPrefixMap'
+import { SITE } from '@/utilities/site'
 
 const generateTitle: GenerateTitle<Post | Page> = ({ doc }) => {
-  return doc?.title ? `${doc.title} | Payload Website Template` : 'Payload Website Template'
+  return doc?.title ? `${doc.title} | ${SITE.name}` : SITE.name
 }
 
-const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
-  const url = getServerSideURL()
+// Uses the public site URL and the collection's path prefix: an article lives
+// at heelvrijeten.nl/blog/<slug>, not at <cms host>/<slug>.
+const generateURL: GenerateURL<Post | Page> = ({ doc, collectionConfig }) => {
+  const url = getPublicSiteURL()
 
-  return doc?.slug ? `${url}/${doc.slug}` : url
+  return doc?.slug ? `${url}${getDocPath(collectionConfig?.slug, doc.slug)}` : url
 }
 
 export const plugins: Plugin[] = [

@@ -1,15 +1,15 @@
 {
-  "name": "payload-3-boilerplate",
+  "name": "payload-3-heelvrijeten",
   "version": "1.0.0",
   "description": "Payload V3 Website builder boilerplate for Railway",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "payload generate:importmap && payload migrate && cross-env NODE_OPTIONS=--no-deprecation next build",
-    "deps:native": "corepack pnpm rebuild sharp esbuild",
+    "deps:native": "pnpm rebuild sharp esbuild",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "dev:prod": "cross-env NODE_OPTIONS=--no-deprecation rm -rf .next && pnpm build && pnpm start",
-    "e2e:install": "corepack pnpm install && corepack pnpm deps:native && corepack pnpm exec playwright install chromium",
+    "e2e:install": "pnpm install && pnpm deps:native && pnpm exec playwright install chromium",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "ii": "cross-env NODE_OPTIONS=--no-deprecation pnpm --ignore-workspace install",
