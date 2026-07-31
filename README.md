@@ -99,7 +99,7 @@ If you prefer `npm`, you can run:
 3. `npm run test:e2e:headed`
 4. `npm run test:e2e:manual`
 
-`test:e2e:manual` runs the suite in headed mode with a visible slowdown between actions and pauses only at the end of the happy path. While paused, the browser stays open so you can click around and manually inspect seeded content, the admin area, and public pages. When you are done, resume or stop the Playwright session from the inspector/terminal.
+`test:e2e:manual` runs the suite in headed mode with a visible slowdown between actions and pauses only at the end of the happy path. While paused, the browser stays open so you can click around and manually inspect the admin area and public pages. When you are done, resume or stop the Playwright session from the inspector/terminal.
 
 
 ### Requirements
