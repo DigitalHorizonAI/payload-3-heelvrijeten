@@ -61,6 +61,11 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
+      // `next build` prerenders with one worker per CPU, each holding its own
+      // pool. With hundreds of article pages, workers × the default pool size
+      // exhausts Postgres's connection cap (53300 "too many clients") and the
+      // build fails. 4 per pool keeps even a 17-worker build under the cap.
+      max: 4,
     },
   }),
   collections: [Pages, Posts, Media, Categories, Users, ApiClients],
