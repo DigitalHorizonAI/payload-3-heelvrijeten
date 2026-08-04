@@ -24,10 +24,28 @@ const SITE_DOMAIN = process.env.IMPORT_DOMAIN || '2ahealthylife.com'
 const SOURCE_JSON = `${BACKUP}/supabase/generated_content-${SITE_DOMAIN === 'heelvrijeten.nl' ? 'heelvrijeten' : '2ahealthylife'}.json`
 const IMAGES_ROOT = `${BACKUP}/images/${SITE_DOMAIN}`
 
+/**
+ * Rows whose stored body is unrelated English placeholder text (watercolor art,
+ * stargazing) under a real Dutch title, written as raw markdown with
+ * example.com image URLs. They are broken at the source, not in the migration —
+ * regenerate them there rather than carry them across.
+ */
+const CORRUPT_ROWS = new Set([
+  '84ec2406-2840-48ad-9b45-045efbe70628',
+  '08829337-018e-4d03-bf58-9e8bac0d4f60',
+  '69c487e5-041d-488e-b565-b3d7c8a92da1',
+])
+
 const args = process.argv.slice(2)
 const limitArg = args.indexOf('--limit')
 const LIMIT = limitArg >= 0 ? Number(args[limitArg + 1]) : Infinity
 const ALLOW_REMOTE = args.includes('--allow-remote')
+
+// Set both for a production run: media is uploaded to the live service so the
+// files land on its volume. Unset (local runs) media is created in-process.
+const MEDIA_UPLOAD_URL = process.env.MEDIA_UPLOAD_URL
+const MEDIA_API_KEY = process.env.MEDIA_API_KEY
+if (MEDIA_UPLOAD_URL && !MEDIA_API_KEY) throw new Error('MEDIA_UPLOAD_URL needs MEDIA_API_KEY.')
 
 const uri = process.env.DATABASE_URI ?? ''
 const isLocal = uri.includes('localhost') || uri.includes('127.0.0.1')
@@ -53,9 +71,18 @@ const run = async () => {
   const rows = JSON.parse(fs.readFileSync(SOURCE_JSON, 'utf8')) as any[]
   rows.sort((a, b) => (a.published_at ?? '').localeCompare(b.published_at ?? ''))
 
-  const stats = { created: 0, skippedExisting: 0, noSlug: 0, heroMissing: 0, inlineImgs: 0, inlineDropped: 0, failed: [] as string[] }
+  const stats = { created: 0, skippedExisting: 0, skippedCorrupt: 0, noSlug: 0, heroReplaced: 0, heroStillMissing: 0, inlineImgs: 0, inlineDropped: 0, failed: [] as string[] }
   const categoryCache = new Map<string, number>()
   const mediaCache = new Map<string, number>()
+
+  // First image reference per category that actually exists in the mirror, used
+  // to give an article whose own hero is broken in production one that matches
+  // the site's style. Built up front so it does not depend on import order.
+  const categoryHeroRef = new Map<string, string>()
+  for (const row of rows) {
+    if (!row.category || categoryHeroRef.has(row.category)) continue
+    if (mirroredFile(row.main_image)) categoryHeroRef.set(row.category, row.main_image)
+  }
 
   /** Create (or reuse) a media doc for an image reference; null if the file is not in the mirror. */
   const ensureMedia = async (ref: string | null, alt: string): Promise<number | null> => {
@@ -63,9 +90,36 @@ const run = async () => {
     if (!file) return null
     const cached = mediaCache.get(file)
     if (cached) return cached
+    const id = MEDIA_UPLOAD_URL ? await uploadMedia(file, alt) : await createMediaLocally(file, alt)
+    mediaCache.set(file, id)
+    return id
+  }
+
+  const createMediaLocally = async (file: string, alt: string): Promise<number> => {
     const media = await payload.create({ collection: 'media', data: { alt }, filePath: file })
-    mediaCache.set(file, media.id as number)
     return media.id as number
+  }
+
+  /**
+   * There is no cloud storage adapter: Payload writes uploads to `public/media`
+   * on whichever machine handles the request. Creating media through the Local
+   * API from a workstation would therefore leave production rows pointing at
+   * files that never left the workstation. Posting to the running service
+   * instead puts the file on the server that will serve it.
+   */
+  const uploadMedia = async (file: string, alt: string): Promise<number> => {
+    const ext = path.extname(file).toLowerCase()
+    const type = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.gif' ? 'image/gif' : 'image/jpeg'
+    const form = new FormData()
+    form.append('file', new Blob([fs.readFileSync(file)], { type }), path.basename(file))
+    form.append('_payload', JSON.stringify({ alt }))
+    const res = await fetch(`${MEDIA_UPLOAD_URL}/api/media`, {
+      method: 'POST',
+      headers: { Authorization: `apiClients API-Key ${MEDIA_API_KEY}` },
+      body: form,
+    })
+    if (!res.ok) throw new Error(`media upload ${res.status} for ${path.basename(file)}: ${(await res.text()).slice(0, 200)}`)
+    return (await res.json()).doc.id as number
   }
 
   /**
@@ -116,6 +170,10 @@ const run = async () => {
       stats.noSlug++
       continue
     }
+    if (CORRUPT_ROWS.has(row.id)) {
+      stats.skippedCorrupt++
+      continue
+    }
     // Source slugs are nested paths (category/subcategory/article). The live
     // SPA already serves the flat /blog/<article> form, and last segments are
     // unique across both sites (verified 390/390 and 180/180), so the post
@@ -129,11 +187,21 @@ const run = async () => {
     }
     processed++
     try {
-      const heroId = await ensureMedia(row.main_image, row.title)
-      if (heroId == null && row.main_image) stats.heroMissing++
-
       const html: string = row.content_html || `<p>${row.content ?? ''}</p>`
       stats.inlineImgs += (html.match(/<img\s/g) ?? []).length
+
+      let heroId = await ensureMedia(row.main_image, row.title)
+      if (heroId == null && row.main_image) {
+        // The hero is one of the images already broken on the live site. Reuse
+        // an image the site is serving today — the article's own first working
+        // inline image, else a working hero from the same category — so the
+        // replacement matches the existing style instead of inventing one.
+        const inlineSrcs = [...html.matchAll(/<img[^>]+src=["']([^"']+)["']/g)].map((m) => m[1])
+        const fallback = inlineSrcs.find((src) => mirroredFile(src)) ?? categoryHeroRef.get(row.category) ?? null
+        heroId = await ensureMedia(fallback, row.title)
+        if (heroId == null) stats.heroStillMissing++
+        else stats.heroReplaced++
+      }
 
       const content = convertHTMLToLexical({ editorConfig, html, JSDOM })
       await resolvePendingUploads(content.root, row.title)
