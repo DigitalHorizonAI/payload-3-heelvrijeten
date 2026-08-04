@@ -1,7 +1,15 @@
 import canUseDOM from './canUseDOM'
 
+/**
+ * Environment variables set through a hosting dashboard pick up stray
+ * whitespace easily, and it is invisible in the UI. A single leading space in
+ * NEXT_PUBLIC_SITE_URL shipped `" https://..."` into every canonical URL and
+ * silently broke CORS, because the origin allow-list compares exact strings.
+ */
+const env = (value: string | undefined) => value?.trim() || undefined
+
 export const getServerSideURL = () => {
-  let url = process.env.NEXT_PUBLIC_SERVER_URL
+  let url = env(process.env.NEXT_PUBLIC_SERVER_URL)
 
   if (!url && process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -33,7 +41,7 @@ export const getServerSideURL = () => {
  * keep working unchanged.
  */
 export const getPublicSiteURL = () => {
-  const url = process.env.NEXT_PUBLIC_SITE_URL
+  const url = env(process.env.NEXT_PUBLIC_SITE_URL)
 
   if (!url && process.env.NODE_ENV === 'production') {
     throw new Error(
@@ -59,5 +67,5 @@ export const getClientSideURL = () => {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   }
 
-  return process.env.NEXT_PUBLIC_SERVER_URL || ''
+  return env(process.env.NEXT_PUBLIC_SERVER_URL) || ''
 }

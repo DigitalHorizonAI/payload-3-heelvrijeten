@@ -20,13 +20,24 @@ import { convertLexicalToHTMLAsync } from '@payloadcms/richtext-lexical/html-asy
 import { getDocPath } from '@/utilities/collectionPrefixMap'
 import { getPublicSiteURL } from '@/utilities/getURL'
 
-const MAX_LIMIT = 50
+// High enough that every consumer fetches the whole blog in one request. The
+// websites and their sitemap/llms.txt functions all need the complete list, and
+// eight round trips per consumer to assemble it is worse for this database than
+// one wide read — see the `select` on the listing query, which keeps that read
+// from dragging along 500 article bodies.
+const MAX_LIMIT = 500
 const DEFAULT_LIMIT = 12
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      // Matches the edge functions' own 5-minute cache. Published content is
+      // not personalised, and this database has already hit its connection
+      // ceiling once under build load.
+      'Cache-Control': 'public, max-age=300',
+    },
   })
 
 /**
@@ -60,6 +71,18 @@ const titles = (docs: unknown): string[] =>
 const publicPath = (post: Post) =>
   post.legacyPath ? `/blog/${String(post.legacyPath).replace(/^\/+/, '')}` : getDocPath('posts', post.slug)
 
+/**
+ * Who the article is by. Articles that predate the CMS arrived with an author
+ * name but no CMS user to link to, so they carry a plain `byline` instead; a
+ * linked author always wins. Without this the website would credit 567 migrated
+ * articles to the site itself and lose their author markup.
+ */
+const bylines = (post: Post): string[] => {
+  const names = (post.populatedAuthors ?? []).map((a) => a.name).filter(Boolean) as string[]
+  if (names.length) return names
+  return post.byline ? [post.byline] : []
+}
+
 const toListing = (post: Post) => ({
   title: post.title,
   slug: post.slug,
@@ -69,6 +92,7 @@ const toListing = (post: Post) => ({
   publishedAt: post.publishedAt ?? null,
   coverImage: imageURL(post.meta?.image),
   categories: titles(post.categories),
+  authors: bylines(post),
   url: `${getPublicSiteURL()}${getDocPath('posts', post.slug)}`,
   meta: {
     title: post.meta?.title ?? post.title,
@@ -124,7 +148,6 @@ const contentHTML = async (post: Post, payload: PayloadRequest['payload']): Prom
 const toArticle = (post: Post) => ({
   ...toListing(post),
   content: post.content,
-  authors: (post.populatedAuthors ?? []).map((a) => a.name).filter(Boolean),
   canonicalUrl: `${getPublicSiteURL()}${getDocPath('posts', post.slug)}`,
   updatedAt: post.updatedAt ?? null,
   relatedPosts: Array.isArray(post.relatedPosts)
@@ -156,6 +179,21 @@ export const articlesListEndpoint: Endpoint = {
         ? Math.min(Math.max(parsedLimit, 1), MAX_LIMIT)
         : DEFAULT_LIMIT,
       page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+      // Only what toListing reads. Without this a 500-article page pulls 500
+      // Lexical bodies out of Postgres to render cards that never show them.
+      // `authors` is deliberately absent: populateAuthors only rewrites
+      // populatedAuthors when it is present, so leaving it out returns the
+      // stored names and skips one user lookup per article per listing.
+      select: {
+        title: true,
+        slug: true,
+        legacyPath: true,
+        publishedAt: true,
+        meta: true,
+        categories: true,
+        populatedAuthors: true,
+        byline: true,
+      },
       sort: '-publishedAt',
       // ponytail: matches on category title because Categories has no slug
       // field — `like` is ILIKE on Postgres, so ?category=automation works
