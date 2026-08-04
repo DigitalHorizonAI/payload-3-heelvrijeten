@@ -8,7 +8,6 @@ import {
   FOOTER_EMAIL,
   FOOTER_KLANTENSERVICE,
   FOOTER_WINKEL,
-  SITE,
   type NavLink,
 } from '@/site'
 
@@ -37,9 +36,9 @@ export function Footer() {
       <div className="container py-16 lg:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
           <div>
-            <a href={SITE} className="inline-block mb-5" aria-label="Heel Vrij Eten home">
+            <Link href="/" className="inline-block mb-5" aria-label="Heel Vrij Eten home">
               <Logo className="text-lg" />
-            </a>
+            </Link>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mb-6">
               {FOOTER_BLURB}
             </p>
