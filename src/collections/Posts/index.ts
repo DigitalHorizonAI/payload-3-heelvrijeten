@@ -133,6 +133,16 @@ export const Posts: CollectionConfig<'posts'> = {
               hasMany: true,
               relationTo: 'categories',
             },
+            {
+              name: 'legacyPath',
+              type: 'text',
+              admin: {
+                position: 'sidebar',
+                description:
+                  'The path this article already has on the public website, without /blog — for example sleep/insomnia/melatonin-guide. Set during the migration so the website keeps serving its existing addresses and its Google rankings. Leave empty on new articles; they use the slug.',
+              },
+              label: 'Existing website path',
+            },
           ],
           label: 'Meta',
         },

@@ -478,6 +478,10 @@ export interface Post {
   };
   relatedPosts?: (number | Post)[] | null;
   categories?: (number | Category)[] | null;
+  /**
+   * The path this article already has on the public website, without /blog — for example sleep/insomnia/melatonin-guide. Set during the migration so the website keeps serving its existing addresses and its Google rankings. Leave empty on new articles; they use the slug.
+   */
+  legacyPath?: string | null;
   meta?: {
     title?: string | null;
     /**
@@ -1082,6 +1086,7 @@ export interface PostsSelect<T extends boolean = true> {
   content?: T;
   relatedPosts?: T;
   categories?: T;
+  legacyPath?: T;
   meta?:
     | T
     | {
