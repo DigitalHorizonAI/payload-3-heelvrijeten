@@ -5,6 +5,7 @@ import * as migration_20260728_120000_drop_comments from './20260728_120000_drop
 import * as migration_20260728_181752_add_logo_cloud_grid_block from './20260728_181752_add_logo_cloud_grid_block';
 import * as migration_20260729_071028_add_api_clients from './20260729_071028_add_api_clients';
 import * as migration_20260804_113226_add_legacy_path from './20260804_113226_add_legacy_path';
+import * as migration_20260804_140000_add_byline from './20260804_140000_add_byline';
 
 export const migrations = [
   {
@@ -41,5 +42,10 @@ export const migrations = [
     up: migration_20260804_113226_add_legacy_path.up,
     down: migration_20260804_113226_add_legacy_path.down,
     name: '20260804_113226_add_legacy_path'
+  },
+  {
+    up: migration_20260804_140000_add_byline.up,
+    down: migration_20260804_140000_add_byline.down,
+    name: '20260804_140000_add_byline'
   },
 ];

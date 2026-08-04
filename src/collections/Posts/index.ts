@@ -143,6 +143,16 @@ export const Posts: CollectionConfig<'posts'> = {
               },
               label: 'Existing website path',
             },
+            {
+              name: 'byline',
+              type: 'text',
+              admin: {
+                position: 'sidebar',
+                description:
+                  'Author name shown on the public website. Set during the migration, where articles arrived with an author name but no matching CMS user. Linking a real author above takes priority over this.',
+              },
+              label: 'Author byline',
+            },
           ],
           label: 'Meta',
         },
