@@ -51,9 +51,19 @@ const titles = (docs: unknown): string[] =>
  * The listing shape. Deliberately small — a client rendering an index should
  * not have to download every article's body to draw a list of cards.
  */
+/**
+ * Where the article lives on the public website. Articles that predate the CMS
+ * keep the nested path they were already indexed under — changing 400 ranking
+ * URLs is not something a CMS migration should do silently. New articles have
+ * no legacy path and use the slug.
+ */
+const publicPath = (post: Post) =>
+  post.legacyPath ? `/blog/${String(post.legacyPath).replace(/^\/+/, '')}` : getDocPath('posts', post.slug)
+
 const toListing = (post: Post) => ({
   title: post.title,
   slug: post.slug,
+  path: publicPath(post),
   // The SEO description doubles as the excerpt; there is no separate field.
   excerpt: post.meta?.description ?? null,
   publishedAt: post.publishedAt ?? null,
