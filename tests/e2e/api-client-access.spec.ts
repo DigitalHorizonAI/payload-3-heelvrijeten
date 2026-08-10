@@ -1,15 +1,19 @@
 import { expect, test } from '@playwright/test'
 
+import { ADMIN, adminAuthHeader } from './admin'
+
 /**
  * What an API key may and may not do.
  *
- * Every access rule in this project used to be `Boolean(user)`, and there is no
- * roles field, so enabling API keys on the users collection would have handed an
- * external tool full administrator rights. The apiClients collection plus the
- * collection checks in src/access/* are what prevent that, and TypeScript cannot
- * help: AccessArgs<T> parametrises `data`, not `req.user`, so a rule that forgot
- * to check the collection still compiles. These assertions are the only thing
+ * Every access rule in this project used to be `Boolean(user)`, so enabling API
+ * keys on the users collection would have handed an external tool full
+ * administrator rights. The apiClients collection plus the collection checks in
+ * src/access/* are what prevent that, and TypeScript cannot help:
+ * AccessArgs<T> parametrises `data`, not `req.user`, so a rule that forgot to
+ * check the collection still compiles. These assertions are the only thing
  * standing between a leaked key and the users table.
+ *
+ * Roles are a separate question, and live in user-roles.spec.ts.
  *
  * The negative cases are the point. Reverting authenticated/authenticatedOrPublished
  * to `Boolean(user)` was measured to turn eight of them red — the key could then
@@ -19,8 +23,6 @@ import { expect, test } from '@playwright/test'
  * Note Payload does not generate the key value; the admin UI does it client-side.
  * Over REST the caller supplies apiKey and Payload derives apiKeyIndex from it.
  */
-
-const ADMIN = { email: 'api-access-admin@example.com', password: 'Test1234!', name: 'Access Admin' }
 
 /** Posts.content is required, and is lexical JSON — not HTML, not markdown. */
 const lexical = (text: string) => ({
@@ -55,16 +57,7 @@ test.describe('api key access', () => {
   let draftId: number
 
   test.beforeAll(async ({ request }) => {
-    // First-user creation is open only while the users table is empty; fall
-    // back to a plain create when a previous spec already made one.
-    let created = await request.post('/api/users/first-register', { data: ADMIN })
-    if (!created.ok()) created = await request.post('/api/users', { data: ADMIN })
-
-    const login = await request.post('/api/users/login', {
-      data: { email: ADMIN.email, password: ADMIN.password },
-    })
-    expect(login.ok(), 'admin login').toBe(true)
-    adminAuth = `JWT ${(await login.json()).token}`
+    adminAuth = await adminAuthHeader(request)
 
     const keyValue = crypto.randomUUID()
     const client = await request.post('/api/apiClients', {
@@ -168,6 +161,19 @@ test.describe('api key access', () => {
 
     const listKeys = await request.get('/api/apiClients', { headers: { Authorization: keyAuth } })
     expect(listKeys.status(), 'must not be able to read keys').toBe(403)
+  })
+
+  test('the key cannot rewrite the site chrome', async ({ request }) => {
+    // Header and Footer declared only `read`, so `update` fell back to Payload's
+    // default — any logged-in principal, an API key included. A key publishes
+    // articles; the site's navigation is not its to edit.
+    for (const global of ['header', 'footer']) {
+      const res = await request.post(`/api/globals/${global}`, {
+        headers: { Authorization: keyAuth },
+        data: { navItems: [] },
+      })
+      expect(res.status(), `${global} must not be writable by a key`).toBe(403)
+    }
   })
 
   test('the key can see its own drafts', async ({ request }) => {

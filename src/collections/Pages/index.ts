@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticated } from '../../access/authenticated'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
+import { isAdmin } from '../../access/isAdmin'
 import { Archive } from '../../blocks/ArchiveBlock/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
@@ -25,8 +26,12 @@ import { getServerSideURL } from '@/utilities/getURL'
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
-    create: authenticated,
-    delete: authenticated,
+    // A page is site structure, not copy: adding one publishes a new address and
+    // deleting one takes a live URL off the internet. Editors edit every word of
+    // an existing page — that is their job — but adding and removing pages is an
+    // admin decision. Deliberate asymmetry, not an oversight.
+    create: isAdmin,
+    delete: isAdmin,
     read: authenticatedOrPublished,
     update: authenticated,
   },

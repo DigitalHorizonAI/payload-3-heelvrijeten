@@ -173,7 +173,9 @@ const seed = async () => {
     existingUser.docs[0] ??
     (await payload.create({
       collection: 'users',
-      data: { email, password: 'demo1234', name: 'Digital Horizon' },
+      // Local seed data: this account is the one a developer signs in with, so
+      // it needs to be able to manage accounts and keys as well as content.
+      data: { email, password: 'demo1234', name: 'Digital Horizon', role: 'admin' },
     }))
 
   const categoryTitles = ['Voice agents', 'Automation', 'Practice']
