@@ -1,18 +1,18 @@
 import type { CollectionConfig } from 'payload'
 
-import { authenticated } from '../access/authenticated'
+import { isAdmin } from '../access/isAdmin'
 
 /**
  * Machine identities that may publish articles over the REST API.
  *
  * This exists so an external tool never holds a `users` credential. Every
- * access rule in this project was `Boolean(user)`, and there is no roles
- * field, so enabling `useAPIKey` on Users would have minted a key that could
- * delete every post, read every admin's email address, and open /admin. A
- * separate collection makes least privilege structural rather than a rule
- * someone has to remember: what an api client may do is decided by which
- * access functions name it, and today that is create/update on posts and
- * create on media, nothing else.
+ * access rule in this project was `Boolean(user)`, so enabling `useAPIKey` on
+ * Users would have minted a key that could delete every post, read every
+ * admin's email address, and open /admin. A separate collection makes least
+ * privilege structural rather than a rule someone has to remember: what an api
+ * client may do is decided by which access functions name it, and today that is
+ * the whole blog — posts, media and categories — and nothing outside it. See
+ * `src/access/contentWriter.ts` for where that boundary is drawn.
  *
  * Authenticate with the collection slug verbatim:
  *   Authorization: apiClients API-Key <key>
@@ -35,12 +35,13 @@ import { authenticated } from '../access/authenticated'
 export const ApiClients: CollectionConfig = {
   slug: 'apiClients',
   access: {
-    // Managing keys is an admin job. `authenticated` is scoped to the users
-    // collection, so a key cannot read, mint or revoke keys — including its own.
-    create: authenticated,
-    delete: authenticated,
-    read: authenticated,
-    update: authenticated,
+    // Managing keys is an admin job, and `isAdmin` is scoped to the users
+    // collection, so neither a key nor an editor can read, mint or revoke keys.
+    // A key issuing itself a successor would outlive any revocation.
+    create: isAdmin,
+    delete: isAdmin,
+    read: isAdmin,
+    update: isAdmin,
   },
   admin: {
     defaultColumns: ['name', 'owner', 'enableAPIKey'],

@@ -77,7 +77,7 @@ for (const u of users.docs) {
   // "locked out", which the login screen reports identically.
   const locked = u.lockUntil && new Date(u.lockUntil) > new Date()
   console.log(
-    `  ${u.id}  ${u.email}${u.name ? `  (${u.name})` : ''}` +
+    `  ${u.id}  [${u.role}]  ${u.email}${u.name ? `  (${u.name})` : ''}` +
       `${locked ? `  🔒 LOCKED until ${u.lockUntil}` : ''}`,
   )
 }
