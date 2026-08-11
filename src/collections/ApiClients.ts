@@ -41,6 +41,10 @@ export const ApiClients: CollectionConfig = {
     create: isAdmin,
     delete: isAdmin,
     read: isAdmin,
+    // `disableLocalStrategy` removes the login route, so there is no lockout to
+    // clear and nothing can reach this today. Declared anyway: the protection
+    // above should not quietly depend on a setting three fields further down.
+    unlock: isAdmin,
     update: isAdmin,
   },
   admin: {
