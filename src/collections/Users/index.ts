@@ -32,6 +32,10 @@ export const Users: CollectionConfig = {
     create: isAdmin,
     delete: isAdmin,
     read: adminsAllUsersSelf,
+    // Clearing an account's failed-login lockout. Undeclared it falls back to
+    // `Boolean(user)`, which would let a key or an editor lift the lockout that
+    // is protecting an administrator's account from a password guesser.
+    unlock: isAdmin,
     update: adminsAllUsersSelf,
   },
   admin: {
