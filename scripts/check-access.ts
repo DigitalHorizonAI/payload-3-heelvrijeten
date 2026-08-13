@@ -1,5 +1,6 @@
 /**
- * Fails if any collection lets an API key or an editor do something it should not.
+ * Fails if any collection or global lets an API key, an editor or a passing
+ * visitor do something it should not.
  *
  *   pnpm check:access
  *
@@ -29,6 +30,13 @@
  * writes down what it is allowed to do. That is the property worth having: the
  * hole this script exists to catch arrived exactly that way, as four collections
  * that appeared with a plugin and were never given rules.
+ *
+ * ## Why globals are checked too
+ *
+ * They were not, until now. This script iterated `resolved.collections` only,
+ * while the site's entire copy — and its navigation — lives in globals. A check
+ * that cannot fail on the thing being changed is not evidence, and this one had
+ * been reporting green while never looking at a single global.
  */
 import config from '@payload-config'
 
@@ -38,9 +46,12 @@ type Verdict = 'full' | 'filtered' | 'denied'
 type Persona = {
   /** How it reads in failure output. */
   label: string
-  user: Record<string, unknown>
+  /** `null` is the anonymous visitor — no session, no key. */
+  user: Record<string, unknown> | null
   /** collection -> operation -> what it may do. Absent means it must be denied. */
   expected: Record<string, Partial<Record<string, Verdict>>>
+  /** global -> operation -> what it may do. Absent means it must be denied. */
+  expectedGlobals?: Record<string, Partial<Record<string, Verdict>>>
 }
 
 /**
@@ -68,6 +79,12 @@ const PERSONAS: Persona[] = [
       // The public form posts here from the browser, unauthenticated.
       'form-submissions': { create: 'full' },
     },
+    // A key exists to publish articles. It has no business rewriting the site's
+    // navigation.
+    expectedGlobals: {
+      header: { read: 'full' },
+      footer: { read: 'full' },
+    },
   },
   {
     label: 'Editor (users, role=editor)',
@@ -90,6 +107,45 @@ const PERSONAS: Persona[] = [
       // admin panel itself, deliberately open — it is where an editor works.
       users: { read: 'filtered', update: 'filtered', admin: 'full' },
       apiClients: {},
+    },
+    // The navigation is not copy: it decides which URLs a visitor can reach,
+    // which is the same site-structure argument that already makes Pages create
+    // and delete admin-only. An editor reads it and leaves it alone.
+    expectedGlobals: {
+      header: { read: 'full' },
+      footer: { read: 'full' },
+    },
+  },
+  {
+    /**
+     * The visitor, and the site's own server-side fetch, which carries no
+     * credentials. Never checked before this, on any of the CMSs — the personas
+     * were an API key and an editor, both of which are logged in.
+     *
+     * It is the persona that decides whether the site's content is on the
+     * internet or behind a login, and whether a stranger can rewrite it.
+     */
+    label: 'Anonymous (no session)',
+    user: null,
+    expected: {
+      // Published-only, hence a Where rather than true.
+      pages: { read: 'filtered' },
+      posts: { read: 'filtered' },
+      media: { read: 'full' },
+      categories: { read: 'full' },
+      search: { read: 'full' },
+      redirects: { read: 'full' },
+      forms: { read: 'full' },
+      // A visitor submitting the contact form is the form working. Reading
+      // other people's submissions is not.
+      'form-submissions': { create: 'full' },
+    },
+    // The front-end fetches these over HTTP with no credentials, so read must
+    // reach them. Header and Footer ship with `read: () => true` — no drafts to
+    // protect, and the nav has to render on the first paint of every page.
+    expectedGlobals: {
+      header: { read: 'full' },
+      footer: { read: 'full' },
     },
   },
 ]
@@ -151,9 +207,47 @@ for (const persona of PERSONAS) {
       }
     }
   }
+
+  /**
+   * Globals, which this script did not look at at all until now — though the
+   * site's whole copy and its navigation live in them.
+   */
+  for (const global of resolved.globals ?? []) {
+    const access = (global.access ?? {}) as Record<string, unknown>
+
+    for (const operation of ['read', 'readVersions', 'readDrafts', 'update']) {
+      const rule = access[operation]
+      if (typeof rule !== 'function') continue
+
+      const req = { user: persona.user, payload: resolved, context: {} }
+      const want = persona.expectedGlobals?.[global.slug]?.[operation] ?? 'denied'
+      checked++
+
+      let actual: Verdict
+      try {
+        actual = classify(await (rule as (a: unknown) => unknown)({ req }))
+      } catch (error) {
+        failures.push(
+          `${persona.label.padEnd(28)} global ${global.slug}.${operation.padEnd(12)} ` +
+            `could not be evaluated: ${error instanceof Error ? error.message : String(error)}`,
+        )
+        continue
+      }
+
+      if (actual !== want) {
+        failures.push(
+          `${persona.label.padEnd(28)} global ${global.slug}.${operation.padEnd(12)} ` +
+            `expected ${want}, got ${actual}`,
+        )
+      }
+    }
+  }
 }
 
-console.log(`Checked ${checked} access rules across ${PERSONAS.length} personas.\n`)
+console.log(
+  `Checked ${checked} access rules across ${PERSONAS.length} personas ` +
+    `(${resolved.collections?.length ?? 0} collections, ${resolved.globals?.length ?? 0} globals).\n`,
+)
 
 if (failures.length) {
   console.error(`${failures.length} rule(s) grant more than intended, or could not be checked:\n`)
@@ -162,4 +256,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('No collection grants an API key or an editor more than intended.')
+console.log('No collection or global grants an API key, an editor or a visitor more than intended.')
