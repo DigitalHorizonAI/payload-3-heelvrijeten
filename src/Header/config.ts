@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { authenticated } from '@/access/authenticated'
+import { isAdmin } from '@/access/isAdmin'
 import { link } from '@/fields/link'
 import { revalidateHeader } from './hooks/revalidateHeader'
 
@@ -8,10 +8,13 @@ export const Header: GlobalConfig = {
   slug: 'header',
   access: {
     read: () => true,
-    // Without this, `update` falls back to Payload's default — any logged-in
-    // principal, which includes an API key. A key exists to publish articles; it
-    // has no business rewriting the site's navigation.
-    update: authenticated,
+    // `authenticated` kept API keys out, which was the point when it was
+    // written, but it still let any editor rewrite the site's navigation: which
+    // URLs every page links to, across the whole site. That is site structure,
+    // not copy — the same argument that already makes Pages create and delete
+    // admin-only (src/collections/Pages/index.ts). Nobody's access changes
+    // today: every account on this CMS is an admin.
+    update: isAdmin,
   },
   fields: [
     {

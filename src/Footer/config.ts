@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { authenticated } from '@/access/authenticated'
+import { isAdmin } from '@/access/isAdmin'
 import { link } from '@/fields/link'
 import { revalidateFooter } from './hooks/revalidateFooter'
 
@@ -8,9 +8,8 @@ export const Footer: GlobalConfig = {
   slug: 'footer',
   access: {
     read: () => true,
-    // See Header/config.ts — an unset `update` means "any logged-in principal",
-    // API keys included.
-    update: authenticated,
+    // See Header/config.ts — same reasoning, same rule.
+    update: isAdmin,
   },
   fields: [
     {
