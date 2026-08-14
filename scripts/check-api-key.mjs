@@ -14,7 +14,11 @@
  *   API_KEY='<key>' ADMIN_EMAIL='...' ADMIN_PASSWORD='...' \
  *     node ./scripts/check-api-key.mjs
  */
-const BASE = process.env.BASE_URL ?? 'https://cms.digital-horizon.io'
+// This repo's own CMS. It defaulted to cms.digital-horizon.io because this
+// script was copied from that repo and never adapted - which would have run the
+// positive path, creating and deleting a real article, against ANOTHER CLIENT'S
+// live blog while appearing to test this one.
+const BASE = process.env.BASE_URL ?? 'https://cms.heelvrijeten.nl'
 const KEY = process.env.API_KEY
 
 if (!KEY) throw new Error('API_KEY is required.')
