@@ -1,6 +1,11 @@
 # Publishing articles over the API
 
-For an external tool that writes articles into the Digital Horizon blog.
+For an external tool that writes articles into the **heelvrijeten** blog.
+
+⚠️ This file started as a copy of the Digital Horizon one and was corrected on
+14 Aug 2026. Every host below is heelvrijeten's. If you find a
+`digital-horizon.io` reference anywhere in it, that is a leftover and articles
+sent there land in the wrong CMS.
 
 ## Authentication
 
@@ -11,10 +16,10 @@ collection name and is part of the format:
 Authorization: apiClients API-Key <key>
 ```
 
-Base URL: `https://cms.digital-horizon.io`
+Base URL: `https://cms.heelvrijeten.nl`
 
 A key that is disabled or revoked returns `403`. Keys are not currently
-reachable from `digital-horizon.io` — use the CMS host directly.
+reachable from `heelvrijeten.nl` — use the CMS host directly.
 
 ## What a key may do
 
@@ -84,9 +89,18 @@ Content-Type: application/json
 }
 ```
 
-`slug` derives from `title` automatically; send one only to override it.
+⚠️ **Send an explicit `slug` for Dutch titles.** Automatic derivation strips
+any character outside `[\w-]`, so accented letters are dropped rather than
+transliterated: *"Eén ei"* becomes `n-ei`. Supply the slug you want and this
+does not arise.
+
+Otherwise `slug` derives from `title` automatically.
 Optional: `meta.title`, `meta.description`, `meta.image`, `categories`,
-`publishedAt`, `relatedPosts`.
+`publishedAt`, `relatedPosts`, `byline`.
+
+`byline` is a plain text field and is how an article gets an author name. Do
+**not** send `authors` — that is a relationship to the user accounts, and a key
+cannot read them.
 
 Response is `201` with the created document. Take `doc.id` from it if the
 article needs updating later.
@@ -130,15 +144,14 @@ Use the returned `doc.id` as `meta.image` when creating the article.
 
 ## Where an article appears
 
-Once published it is live at `https://digital-horizon.io/blog/<slug>`, listed
-on `/blog`, and included in `https://digital-horizon.io/blog-sitemap.xml`.
+Once published it is live at `https://heelvrijeten.nl/blog/<slug>`, listed
+on `/blog`, and included in `https://heelvrijeten.nl/blog-sitemap.xml`.
 
-One delay is normal and is not a fault: the blog is served through a CDN proxy,
-so a change can take **up to about ten minutes** to appear on
-`digital-horizon.io/blog` even though it is immediate on
-`cms.digital-horizon.io/blog`. When checking whether something worked, look at
-the CMS host first — that separates "it did not publish" from "the cache has
-not caught up".
+One delay is normal and is not a fault: the public site fetches from the CMS
+with a short cache, so a change can take **around five minutes** to appear on
+`heelvrijeten.nl/blog` even though it is immediate in the CMS. When checking
+whether something worked, read it back from `cms.heelvrijeten.nl` first — that
+separates "it did not publish" from "the cache has not caught up".
 
 The sitemap updates as soon as an article is published, unpublished, renamed or
 deleted, so it needs no waiting.
