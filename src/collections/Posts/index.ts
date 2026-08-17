@@ -1,11 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
 import {
+  BlockquoteFeature,
   BlocksFeature,
   FixedToolbarFeature,
   HeadingFeature,
   HorizontalRuleFeature,
   InlineToolbarFeature,
+  OrderedListFeature,
+  UnorderedListFeature,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
@@ -15,6 +18,7 @@ import { Banner } from '../../blocks/Banner/config'
 import { Code } from '../../blocks/Code/config'
 import { MediaBlock } from '../../blocks/MediaBlock/config'
 import { generatePreviewPath } from '../../utilities/generatePreviewPath'
+import { ingestMarkdownContent } from './hooks/ingestMarkdownContent'
 import { populateAuthors } from './hooks/populateAuthors'
 import { revalidateDelete, revalidatePost } from './hooks/revalidatePost'
 
@@ -93,6 +97,17 @@ export const Posts: CollectionConfig<'posts'> = {
                   return [
                     ...rootFeatures,
                     HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+                    // `rootFeatures` is the config-level editor (defaultLexical:
+                    // paragraph, bold, italic, underline, link), NOT Payload's
+                    // built-in defaults — so lists and quotes are absent unless
+                    // added here. serialize.tsx already renders list, listitem
+                    // and quote nodes; only the editor could not produce them.
+                    // Without these an SEO article's bullets convert to flat
+                    // paragraphs and still return 201. Guarded by
+                    // `pnpm check:markdown-ingest`.
+                    UnorderedListFeature(),
+                    OrderedListFeature(),
+                    BlockquoteFeature(),
                     BlocksFeature({ blocks: [Banner, Code, MediaBlock] }),
                     FixedToolbarFeature(),
                     InlineToolbarFeature(),
@@ -100,6 +115,10 @@ export const Posts: CollectionConfig<'posts'> = {
                   ]
                 },
               }),
+              // Converts a Markdown string from the SEO tool into Lexical.
+              // beforeValidate, not beforeChange: `required` would reject the
+              // string first — field validation runs in the beforeChange pass.
+              hooks: { beforeValidate: [ingestMarkdownContent] },
               label: false,
               required: true,
             },
