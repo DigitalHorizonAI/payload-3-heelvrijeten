@@ -132,8 +132,8 @@ check(
 
 // 3b — a real generated article, not a toy string. These are the constructs the
 // article writer actually produces, and the two that the repo's other HTML
-// parser (scripts/reimport-blog-bodies.ts) throws on: a bare <table> with no
-// div.table-scroll wrapper, and a top-level <img>. Measured against a real
+// parser (scripts/import-articles.ts) has to handle: a bare <table> with no
+// wrapper div, and a top-level <img>. Measured against a real
 // article on 28 Aug: every one of these survives, and the image does not.
 const REAL_SHAPE = [
   '<p>Ever asked for a quote and been baffled by the answers?</p>',

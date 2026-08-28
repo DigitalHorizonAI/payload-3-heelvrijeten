@@ -29,8 +29,9 @@ import { JSDOM } from 'jsdom'
 //
 // KNOWN CEILING: `<img>` is dropped. This field registers no upload feature and
 // MediaBlock needs a real Media document, so no DOM importer claims an image
-// tag. Measured on a real generated article: headings, lists, tables, quotes,
-// bold and italic all survive and no prose is lost — only the images go. The
+// tag. Measured on a real generated article: headings, lists, quotes, bold and
+// italic all survive and no prose is lost — only the images go. Tables flatten
+// to one paragraph per cell; this field registers no TableFeature. The
 // count is logged below so the loss is visible in the server log rather than
 // silent. Restoring them means importing remote images as Media docs, which
 // needs storage decided first.
@@ -48,7 +49,7 @@ export const ingestMarkdownContent: FieldHook = ({ field, value }) => {
   // fromField, NOT editorConfigFactory.default — `default` resolves to the
   // config-level `defaultLexical` (five features, no headings), which would
   // silently drop every heading and list. fromField uses this field's own
-  // editor, which includes headings, lists, links, tables and blockquotes.
+  // editor, which includes headings, lists, links and blockquotes.
   const editorConfig = editorConfigFactory.fromField({ field: field as RichTextField })
 
   if (LOOKS_LIKE_HTML.test(source)) {
