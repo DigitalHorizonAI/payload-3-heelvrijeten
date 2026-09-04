@@ -27,9 +27,15 @@ export async function generateStaticParams() {
     },
   })
 
-  const params = posts.docs.map(({ slug }) => {
-    return { slug }
-  })
+  // Next refuses a param that is not a string, and one such post reds the
+  // whole build. A post can reach here without a slug - the field is not
+  // required and articles arrive over the API - so skip it rather than lose
+  // the deploy. This is what took the newwebsite.builders CMS down on 4 Sep.
+  const params = posts.docs
+    .filter(({ slug }) => typeof slug === 'string' && slug.length > 0)
+    .map(({ slug }) => {
+      return { slug }
+    })
 
   return params
 }
