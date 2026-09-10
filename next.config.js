@@ -27,6 +27,27 @@ const nextConfig = {
   reactStrictMode: true,
   redirects,
   /**
+   * Generated media is served with no Cache-Control, no ETag and no
+   * Last-Modified, so a browser can neither cache it nor revalidate it and
+   * every view is a fresh round trip. Measured 10 Sep 2026 on the article
+   * hero at /api/media/file/nachtelijke-kuitkrampen-in-bed.webp: two
+   * consecutive GETs through heelvrijeten.nl both returned
+   * Cache-Status "Netlify Edge"; fwd=miss.
+   *
+   * The header has to come from here. A Netlify [[headers]] rule never
+   * applies to a proxied 200-rewrite, only to files Netlify serves itself -
+   * see the note above the media proxy in heelgezondeten/netlify.toml.
+   *
+   * immutable is a real commitment: an image replaced at the same filename
+   * serves stale for a year.
+   */
+  headers: async () => [
+    {
+      source: '/api/media/file/:path*',
+      headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+    },
+  ],
+  /**
    * Static generation runs one worker per CPU, and every worker opens its own
    * Postgres pool. On a build machine reporting 17 CPUs that is 17 pools
    * competing with the running site for connections, and the build dies with
