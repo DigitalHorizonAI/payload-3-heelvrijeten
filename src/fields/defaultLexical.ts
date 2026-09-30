@@ -14,7 +14,8 @@ import { text } from 'payload/shared'
 // found); refuse that shape instead of publishing a broken href.
 const LINK_URL = /^(https?:\/\/\S|mailto:|tel:|\/|#)/
 // The link drawer pre-fills `https://`, so pasting a full address into it gives
-// `https://https://…` or `https://https.…`. Refuses a real `http.` host too.
+// `https://https://…`; if the pasted address had already lost its `://`, it
+// gives `https://https.…`. Refuses a real `http.` host too.
 const DOUBLED_SCHEME = /^https?:\/\/https?[:.]/i
 
 export const defaultLexical: Config['editor'] = lexicalEditor({

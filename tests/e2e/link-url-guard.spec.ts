@@ -12,8 +12,8 @@ import { adminAuthHeader } from './admin'
  * refuses the mangled form so it can no longer be published.
  *
  * The admin's link drawer pre-fills `https://`, so pasting a full address into
- * it gives `https://https://…` or `https://https.…`. The field refuses a doubled
- * scheme too.
+ * it gives `https://https://…`; if the pasted address had already lost its
+ * `://`, it gives `https://https.…`. The field refuses a doubled scheme too.
  *
  * On a REST save the refusal comes from lexical's link-node validation, which
  * reports only "The following fields are invalid: url". Draft saves
