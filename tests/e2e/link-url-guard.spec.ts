@@ -7,10 +7,9 @@ import { adminAuthHeader } from './admin'
 /**
  * A rich-text link's url must keep its scheme.
  *
- * In the production admin a pasted `https://nplink.net/9izl9u2b` turned into
- * `https.nplink.net/9izl9u2b` before saving, in two browsers. The cause is not
- * found; the url field in src/fields/defaultLexical.ts refuses the mangled form
- * so it can no longer be published.
+ * Published posts hold links saved as `https.nplink.net/…`, with the `://`
+ * lost. The cause is not found; the url field in src/fields/defaultLexical.ts
+ * refuses the mangled form so it can no longer be published.
  *
  * The admin's link drawer pre-fills `https://`, so pasting a full address into
  * it gives `https://https://…` or `https://https.…`. The field refuses a doubled
@@ -138,8 +137,8 @@ test.describe('link url guard', () => {
 
     const drawer = page.getByRole('dialog', { name: /lexical-rich-text-link/ })
     // Text to display, then Enter a URL. The drawer fills in `https://` once it
-    // has loaded, and on a slow machine can do so again after it first shows,
-    // wiping what was typed. Wait for the page to go quiet, then fill until the
+    // has loaded, and can do so again shortly after it first shows, wiping
+    // what was typed. Wait for the page to go quiet, then fill until the
     // value sticks.
     const url = drawer.getByRole('textbox').nth(1)
     await expect(url).toHaveValue('https://')

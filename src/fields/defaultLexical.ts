@@ -9,8 +9,8 @@ import {
 } from '@payloadcms/richtext-lexical'
 import { text } from 'payload/shared'
 
-// A link url must keep its scheme. Editing a link in the admin once turned
-// `https://nplink.net/…` into `https.nplink.net/…` before saving (cause not
+// A link url must keep its scheme. Posts here hold links saved as
+// `https.nplink.net/…` and `https/nplink.net/…` (the `://` lost; cause not
 // found); refuse that shape instead of publishing a broken href.
 const LINK_URL = /^(https?:\/\/\S|mailto:|tel:|\/|#)/
 // The link drawer pre-fills `https://`, so pasting a full address into it gives
