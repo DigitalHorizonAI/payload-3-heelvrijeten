@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { cn } from 'src/utilities/cn'
-import { DM_Sans, Fraunces } from 'next/font/google'
+import localFont from 'next/font/local'
 import React from 'react'
 
 import { AdminBar } from '@/components/AdminBar'
@@ -17,16 +17,19 @@ import { getServerSideURL } from '@/utilities/getURL'
 
 // The same two families heelvrijeten.nl loads, so the blog reads as one
 // site: Fraunces for headings, DM Sans for everything else.
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  weight: ['400', '600'],
+// The files are committed (latin subset, variable weight, SIL OFL; licences
+// alongside) so the build never has to reach Google Fonts.
+const fraunces = localFont({
+  src: './fonts/Fraunces-latin.woff2',
+  weight: '400 600',
   variable: '--font-fraunces',
   display: 'swap',
+  adjustFontFallback: 'Times New Roman',
 })
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+const dmSans = localFont({
+  src: './fonts/DMSans-latin.woff2',
+  weight: '400 600',
   variable: '--font-dm-sans',
   display: 'swap',
 })
